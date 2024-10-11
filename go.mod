@@ -3,6 +3,7 @@ module github.com/RIBorisov/GophKeeper
 go 1.22.3
 
 require (
+	github.com/caarlos0/env/v11 v11.2.2
 	github.com/rs/zerolog v1.33.0
 	golang.org/x/sync v0.8.0
 )

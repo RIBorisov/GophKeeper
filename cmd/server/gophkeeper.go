@@ -21,4 +21,14 @@ func main() {
 
 	g, ctx := errgroup.WithContext(ctx)
 	cfg := config.Load()
+	log.Debug("Loaded config", "config", &cfg)
+	log.Warning("WARN Message")
+	log.Info("INFO Message")
+	log.Error("ERROR Message")
+	_ = cfg
+	err := g.Wait()
+	if err != nil {
+		log.Fatal("FATAL ERROR")
+	}
+
 }
