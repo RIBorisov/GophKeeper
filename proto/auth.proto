@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+option go_package = "gophkeeper/pkg/server";
+
+message AuthRequest {
+  string Login = 1;
+  string Password = 2;
+}
+
+message AuthResponse {
+  string Result = 1;
+}

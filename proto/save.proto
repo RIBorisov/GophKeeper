@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+option go_package = "gophkeeper/pkg/server";
+
+import "card.proto";
+
+enum Kind {
+  UNSPECIFIED = 0;
+  CARD = 1;
+  TEXT = 2;
+  CREDENTIALS = 3;
+  BINARY = 4;
+}
+
+message Credentials {
+  string Login = 1;
+  string Password = 2;
+}
+
+message SaveRequest {
+  Kind kind = 1;
+
+  oneof Data {
+    string text = 2;
+    bytes binary = 3;
+    Credentials credentials = 4;
+    Card card = 5;
+  }
+  string meta = 6;
+}
+
+message SaveResponse {
+  string ID = 1;
+}

@@ -15,9 +15,14 @@ type ServiceConfig struct {
 	SecretKey string `env:"SECRET_KEY" envDefault:""`
 }
 
+type S3Config struct {
+	BucketName string `env:"BUCKET_NAME" envDefault:"bucket"`
+}
+
 type Config struct {
 	App     AppConfig
 	Service ServiceConfig
+	S3      S3Config `envPrefix:"S3"`
 }
 
 func Load() *Config {

@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+option go_package = "gophkeeper/pkg/server";
+
+import "register.proto";
+import "auth.proto";
+import "save.proto";
+import "get.proto";
+
+service GophKeeperService {
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+  rpc Auth(AuthRequest) returns (AuthResponse);
+  rpc Save(SaveRequest) returns (SaveResponse); // продумать ограничение загрузки файла (размер)
+//  rpc Sync(SyncRequest) returns (SyncResponse); горутина фоновая
+  rpc Get(GetRequest) returns (GetResponse);
+}

@@ -8,6 +8,7 @@ import (
 	"github.com/rs/zerolog"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/RIBorisov/GophKeeper/internal/app/s3"
 	"github.com/RIBorisov/GophKeeper/internal/app/server"
 	"github.com/RIBorisov/GophKeeper/internal/config"
 	"github.com/RIBorisov/GophKeeper/internal/log"
@@ -31,7 +32,8 @@ func main() {
 	}
 	log.Info("Storage has been initialized..")
 
-	svc := &service.Service{Cfg: cfg, Storage: store}
+	s3client, err := s3.NewS3Client(ctx, cfg)
+	svc := &service.Service{Cfg: cfg, Storage: store, S3Client: s3client}
 
 	g.Go(func() error { return server.GRPCServe(svc) })
 	if err = g.Wait(); err != nil {

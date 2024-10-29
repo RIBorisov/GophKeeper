@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+option go_package = "gophkeeper/pkg/server";
+
+import "save.proto";
+import "card.proto";
+
+message GetRequest {
+  string ID = 1;
+}
+
+message GetResponse {
+  Kind kind = 1;
+
+  oneof Data {
+    string text = 2;
+    bytes binary = 3;
+    Credentials credentials = 4;
+    Card card = 5;
+  }
+  string ID = 6;
+}

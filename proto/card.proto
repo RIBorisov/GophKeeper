@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+option go_package = "gophkeeper/pkg/server";
+
+message Card {
+  string number = 1;
+  string mm_yy = 2;
+  string cvc = 3;
+}
