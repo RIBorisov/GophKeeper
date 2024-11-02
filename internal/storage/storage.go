@@ -82,9 +82,9 @@ func (d *DB) GetUser(ctx context.Context, login string) (*UserEntity, error) {
 // Save method saves user data (e.g. kind, meta) into database.
 func (d *DB) Save(ctx context.Context, data model.Save) (string, error) {
 	const stmt = `INSERT INTO metadata(id, user_id, kind, metadata) VALUES (@id, @user_id, @kind, @metadata) RETURNING id`
-	userID, ok := ctx.Value(model.CtxUserIDKey).(string)
-	if !ok {
-		return "", ErrUserExists
+	userID, err := getUserFromCtx(ctx)
+	if err != nil {
+		return "", err
 	}
 	var id string
 	args := pgx.NamedArgs{"id": data.ID, "user_id": userID, "kind": data.Kind.String(), "metadata": data.Meta}
@@ -105,13 +105,14 @@ type MetadataEntity struct {
 // Get method gets metadata from database.
 func (d *DB) Get(ctx context.Context, id string) (*MetadataEntity, error) {
 	const stmt = `SELECT metadata, kind FROM metadata WHERE id=@id AND user_id=@userID`
-	userID, ok := ctx.Value(model.CtxUserIDKey).(string)
-	if !ok {
-		return nil, ErrUserNotFound
+	userID, err := getUserFromCtx(ctx)
+	if err != nil {
+		return nil, err
 	}
+
 	var e MetadataEntity
 
-	err := d.pool.QueryRow(ctx, stmt, pgx.NamedArgs{"id": id, "userID": userID}).Scan(&e.Metadata, &e.Kind)
+	err = d.pool.QueryRow(ctx, stmt, pgx.NamedArgs{"id": id, "userID": userID}).Scan(&e.Metadata, &e.Kind)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrMetadataNotFound
@@ -120,6 +121,16 @@ func (d *DB) Get(ctx context.Context, id string) (*MetadataEntity, error) {
 	}
 
 	return &e, nil
+}
+
+func getUserFromCtx(ctx context.Context) (string, error) {
+	userID, ok := ctx.Value(model.CtxUserIDKey).(string)
+	if !ok {
+		return "", ErrUserNotFound
+	}
+	log.Debug("Got user from ctx", "userID", userID)
+
+	return userID, nil
 }
 
 var (

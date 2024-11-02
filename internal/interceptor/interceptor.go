@@ -34,7 +34,7 @@ func UserIDUnaryInterceptor(svc *service.Service, excludeMethods []string) grpc.
 
 		token := md.Get("token")
 		if len(token) == 0 {
-			log.Error("got token empty token")
+			log.Error("got empty token")
 			return nil, status.Error(codes.Unauthenticated, "Access denied")
 		}
 

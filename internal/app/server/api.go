@@ -8,7 +8,6 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 
@@ -41,13 +40,14 @@ func GRPCServe(svc *service.Service) error {
 	s := grpc.NewServer(grpc.UnaryInterceptor(interceptor.UserIDUnaryInterceptor(svc, exclude)))
 	pb.RegisterGophKeeperServiceServer(s, &GRPCServer{svc: svc})
 	reflection.Register(s)
-	log.Info("Starting gRPC server...")
+	log.Info("Starting gRPC server...", "Addr", svc.Cfg.App.Addr)
 
 	return s.Serve(listen)
 }
 
 // Register method uses for customer registration.
 func (g *GRPCServer) Register(ctx context.Context, in *pb.RegisterRequest) (*pb.RegisterResponse, error) {
+	log.Debug("Going to register", "user", in.GetLogin())
 	t, err := g.svc.RegisterUser(ctx, model.UserCredentials{Login: in.GetLogin(), Password: in.GetPassword()})
 	if err != nil {
 		if errors.Is(err, storage.ErrUserExists) {
@@ -57,13 +57,7 @@ func (g *GRPCServer) Register(ctx context.Context, in *pb.RegisterRequest) (*pb.
 		return nil, status.Error(codes.Internal, "")
 	}
 
-	md := metadata.New(map[string]string{"token": t})
-	if err = grpc.SetHeader(ctx, md); err != nil {
-		log.Error("failed to set token header")
-		return nil, status.Error(codes.Internal, "")
-	}
-
-	return &pb.RegisterResponse{Result: "Success"}, nil
+	return &pb.RegisterResponse{Token: t}, nil
 }
 
 // Auth method uses for customer authentication.
@@ -79,13 +73,7 @@ func (g *GRPCServer) Auth(ctx context.Context, in *pb.AuthRequest) (*pb.AuthResp
 		return nil, status.Error(codes.Internal, "")
 	}
 
-	md := metadata.New(map[string]string{"token": t})
-	if err = grpc.SetHeader(ctx, md); err != nil {
-		log.Error("failed to set token header")
-		return nil, status.Error(codes.Internal, "")
-	}
-
-	return &pb.AuthResponse{Result: "Success"}, nil
+	return &pb.AuthResponse{Token: t}, nil
 }
 
 // Save method uses to save user's data.

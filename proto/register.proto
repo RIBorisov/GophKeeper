@@ -9,5 +9,5 @@ message RegisterRequest {
 }
 
 message RegisterResponse {
-  string Result = 1;
+  string Token = 1;
 }
