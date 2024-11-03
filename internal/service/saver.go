@@ -11,7 +11,7 @@ import (
 )
 
 func (s *Service) saveText(ctx context.Context, fileName, text string) error {
-	file, err := saveFile(fileName, []byte(text))
+	file, err := saveFile(fileName, s.Cfg.Service.SecretKey, []byte(text))
 	if err != nil {
 		return fmt.Errorf("failed to save file: %w", err)
 	}
@@ -31,7 +31,7 @@ func (s *Service) saveText(ctx context.Context, fileName, text string) error {
 }
 
 func (s *Service) saveBytes(ctx context.Context, fileName string, text []byte) error {
-	file, err := saveFile(fileName, text)
+	file, err := saveFile(fileName, s.Cfg.Service.SecretKey, text)
 	if err != nil {
 		return fmt.Errorf("failed to save file: %w", err)
 	}
@@ -54,7 +54,7 @@ func (s *Service) saveBytes(ctx context.Context, fileName string, text []byte) e
 func (s *Service) saveCard(ctx context.Context, fileName string, in *pb.Card) error {
 	fileData := in.GetNumber() + " " + in.GetMmYy() + " " + in.GetCvc()
 
-	file, err := saveFile(fileName, []byte(fileData))
+	file, err := saveFile(fileName, s.Cfg.Service.SecretKey, []byte(fileData))
 	if err != nil {
 		return fmt.Errorf("failed to save file: %w", err)
 	}
@@ -74,8 +74,8 @@ func (s *Service) saveCard(ctx context.Context, fileName string, in *pb.Card) er
 	return nil
 }
 
+// SaveMeta saves metadata into db.
 func (s *Service) SaveMeta(ctx context.Context, metadata model.Save) (string, error) {
-	// Не пойму как сделать лучше model.ToKind(in.Kind)
 	log.Debug("going to save metadata into postgres..")
 
 	id, err := s.Storage.Save(ctx, metadata)
@@ -86,8 +86,14 @@ func (s *Service) SaveMeta(ctx context.Context, metadata model.Save) (string, er
 	return id, nil
 }
 
-func saveFile(fname string, data []byte) (*os.File, error) {
-	if err := os.WriteFile("tmp/"+fname, data, 0666); err != nil {
+// saveFile encrypts data, saves and returns it as *os.File.
+func saveFile(fname, secret string, data []byte) (*os.File, error) {
+	encrypted, err := Encrypt(secret, data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encrypt: %w", err)
+	}
+
+	if err := os.WriteFile("tmp/"+fname, encrypted, 0666); err != nil {
 		return nil, fmt.Errorf("failed to create file: %w", err)
 	}
 

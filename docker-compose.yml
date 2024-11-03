@@ -21,7 +21,7 @@ services:
       MINIO_ROOT_USER: "admin"
       MINIO_ROOT_PASSWORD: "password"
       MINIO_USE_SSL: "0"
-      MINIO_DEFAULT_BUCKETS: "default-bucket"
+      MINIO_DEFAULT_BUCKETS: "bucket"
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
       interval: 5s

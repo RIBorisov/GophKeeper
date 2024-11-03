@@ -23,6 +23,7 @@ const (
 	GophKeeperService_Auth_FullMethodName     = "/GophKeeperService/Auth"
 	GophKeeperService_Save_FullMethodName     = "/GophKeeperService/Save"
 	GophKeeperService_Get_FullMethodName      = "/GophKeeperService/Get"
+	GophKeeperService_GetMany_FullMethodName  = "/GophKeeperService/GetMany"
 )
 
 // GophKeeperServiceClient is the client API for GophKeeperService service.
@@ -32,8 +33,8 @@ type GophKeeperServiceClient interface {
 	Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error)
 	Auth(ctx context.Context, in *AuthRequest, opts ...grpc.CallOption) (*AuthResponse, error)
 	Save(ctx context.Context, in *SaveRequest, opts ...grpc.CallOption) (*SaveResponse, error)
-	// rpc Sync(SyncRequest) returns (SyncResponse); горутина фоновая
 	Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*GetResponse, error)
+	GetMany(ctx context.Context, in *GetManyRequest, opts ...grpc.CallOption) (*GetManyResponse, error)
 }
 
 type gophKeeperServiceClient struct {
@@ -84,6 +85,16 @@ func (c *gophKeeperServiceClient) Get(ctx context.Context, in *GetRequest, opts 
 	return out, nil
 }
 
+func (c *gophKeeperServiceClient) GetMany(ctx context.Context, in *GetManyRequest, opts ...grpc.CallOption) (*GetManyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetManyResponse)
+	err := c.cc.Invoke(ctx, GophKeeperService_GetMany_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // GophKeeperServiceServer is the server API for GophKeeperService service.
 // All implementations must embed UnimplementedGophKeeperServiceServer
 // for forward compatibility.
@@ -91,8 +102,8 @@ type GophKeeperServiceServer interface {
 	Register(context.Context, *RegisterRequest) (*RegisterResponse, error)
 	Auth(context.Context, *AuthRequest) (*AuthResponse, error)
 	Save(context.Context, *SaveRequest) (*SaveResponse, error)
-	// rpc Sync(SyncRequest) returns (SyncResponse); горутина фоновая
 	Get(context.Context, *GetRequest) (*GetResponse, error)
+	GetMany(context.Context, *GetManyRequest) (*GetManyResponse, error)
 	mustEmbedUnimplementedGophKeeperServiceServer()
 }
 
@@ -114,6 +125,9 @@ func (UnimplementedGophKeeperServiceServer) Save(context.Context, *SaveRequest) 
 }
 func (UnimplementedGophKeeperServiceServer) Get(context.Context, *GetRequest) (*GetResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
+}
+func (UnimplementedGophKeeperServiceServer) GetMany(context.Context, *GetManyRequest) (*GetManyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetMany not implemented")
 }
 func (UnimplementedGophKeeperServiceServer) mustEmbedUnimplementedGophKeeperServiceServer() {}
 func (UnimplementedGophKeeperServiceServer) testEmbeddedByValue()                           {}
@@ -208,6 +222,24 @@ func _GophKeeperService_Get_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _GophKeeperService_GetMany_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetManyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GophKeeperServiceServer).GetMany(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GophKeeperService_GetMany_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GophKeeperServiceServer).GetMany(ctx, req.(*GetManyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // GophKeeperService_ServiceDesc is the grpc.ServiceDesc for GophKeeperService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -230,6 +262,10 @@ var GophKeeperService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Get",
 			Handler:    _GophKeeperService_Get_Handler,
+		},
+		{
+			MethodName: "GetMany",
+			Handler:    _GophKeeperService_GetMany_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

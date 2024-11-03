@@ -13,18 +13,14 @@ import (
 	"github.com/RIBorisov/GophKeeper/internal/log"
 )
 
-type Client struct {
-	client     *minio.Client
+type S3Client struct {
+	s3client   *minio.Client
 	bucketName string
 }
 
-func NewS3Client(ctx context.Context, cfg *config.Config) (*Client, error) {
-	endpoint := "localhost:9000"
-	accessKeyID := "admin"
-	secretAccessKey := "password"
-
-	client, err := minio.New(endpoint, &minio.Options{
-		Creds:  credentials.NewStaticV4(accessKeyID, secretAccessKey, ""),
+func NewS3Client(ctx context.Context, cfg *config.Config) (*S3Client, error) {
+	client, err := minio.New(cfg.S3.Endpoint, &minio.Options{
+		Creds:  credentials.NewStaticV4(cfg.S3.AccessKeyID, cfg.S3.SecretAccessKey, ""),
 		Secure: false,
 	})
 	if err != nil {
@@ -44,19 +40,19 @@ func NewS3Client(ctx context.Context, cfg *config.Config) (*Client, error) {
 		log.Debug("Successfully created", "bucket", cfg.S3.BucketName)
 	}
 
-	return &Client{client: client, bucketName: cfg.S3.BucketName}, nil
+	return &S3Client{s3client: client, bucketName: cfg.S3.BucketName}, nil
 }
 
-func (c *Client) PutObject(ctx context.Context, name string, obj io.Reader, size int64) error {
-	if _, err := c.client.PutObject(ctx, c.bucketName, name, obj, size, minio.PutObjectOptions{}); err != nil {
+func (s *S3Client) PutObject(ctx context.Context, name string, obj io.Reader, size int64) error {
+	if _, err := s.s3client.PutObject(ctx, s.bucketName, name, obj, size, minio.PutObjectOptions{}); err != nil {
 		return fmt.Errorf("failed to put object into bucket: %w", err)
 	}
 
 	return nil
 }
 
-func (c *Client) GetObject(ctx context.Context, name string) ([]byte, error) {
-	obj, err := c.client.GetObject(ctx, c.bucketName, name, minio.GetObjectOptions{})
+func (s *S3Client) GetObject(ctx context.Context, name string) ([]byte, error) {
+	obj, err := s.s3client.GetObject(ctx, s.bucketName, name, minio.GetObjectOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get object: %w", err)
 	}

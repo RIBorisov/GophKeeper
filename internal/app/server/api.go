@@ -102,7 +102,20 @@ func (g *GRPCServer) Get(ctx context.Context, in *pb.GetRequest) (*pb.GetRespons
 		}
 		return nil, status.Error(codes.Internal, "")
 	}
-	res := &pb.GetResponse{ID: data.GetID(), Kind: data.GetKind(), Data: data.GetData()}
 
-	return res, nil
+	return &pb.GetResponse{
+		ID:   data.GetID(),
+		Kind: data.GetKind(),
+		Data: data.GetData(),
+	}, nil
+}
+
+// GetMany method uses to retrieve all user's data.
+func (g *GRPCServer) GetMany(ctx context.Context, _ *pb.GetManyRequest) (*pb.GetManyResponse, error) {
+	data, err := g.svc.GetUserData(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user data: %w", err)
+	}
+
+	return data, nil
 }

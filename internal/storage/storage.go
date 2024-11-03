@@ -98,6 +98,7 @@ func (d *DB) Save(ctx context.Context, data model.Save) (string, error) {
 
 type MetadataEntity struct {
 	ID       string     `db:"id"`
+	UserID   string     `db:"user_id"`
 	Metadata string     `db:"metadata"`
 	Kind     model.Kind `db:"kind"`
 }
@@ -123,6 +124,29 @@ func (d *DB) Get(ctx context.Context, id string) (*MetadataEntity, error) {
 	return &e, nil
 }
 
+func (d *DB) GetMany(ctx context.Context) ([]*MetadataEntity, error) {
+	const stmt = `SELECT id, kind, metadata FROM metadata WHERE user_id=@userID`
+	userID, err := getUserFromCtx(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := d.pool.Query(ctx, stmt, pgx.NamedArgs{"userID": userID})
+	if err != nil {
+		return nil, fmt.Errorf("failed to query rows: %w", err)
+	}
+
+	var raw []*MetadataEntity
+	for rows.Next() {
+		me := &MetadataEntity{}
+		if err = rows.Scan(&me.ID, &me.Kind, &me.Metadata); err != nil {
+			return nil, fmt.Errorf("failed to scan metadata entity: %w", err)
+		}
+		raw = append(raw, me)
+	}
+
+	return raw, nil
+}
 func getUserFromCtx(ctx context.Context) (string, error) {
 	userID, ok := ctx.Value(model.CtxUserIDKey).(string)
 	if !ok {

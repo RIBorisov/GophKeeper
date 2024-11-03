@@ -3,14 +3,19 @@ package client
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 
 	pb "github.com/RIBorisov/GophKeeper/pkg/server"
 )
@@ -25,6 +30,7 @@ func sayf(format string, a ...any) {
 
 type Client struct {
 	grpcClient pb.GophKeeperServiceClient
+	localCache *sync.Map
 	token      string
 }
 
@@ -34,7 +40,11 @@ func NewClient(ctx context.Context) (*Client, error) {
 		return nil, fmt.Errorf("failed to create new client: %w", err)
 	}
 
-	return &Client{grpcClient: pb.NewGophKeeperServiceClient(conn)}, nil
+	return &Client{
+		grpcClient: pb.NewGophKeeperServiceClient(conn),
+		localCache: &sync.Map{},
+		token:      "",
+	}, nil
 }
 
 func (c *Client) Register(ctx context.Context, s *bufio.Scanner) (*pb.RegisterResponse, error) {
@@ -76,6 +86,7 @@ func (c *Client) LogIn(ctx context.Context, s *bufio.Scanner) (*pb.AuthResponse,
 func (c *Client) GetData(ctx context.Context, s *bufio.Scanner) (*pb.GetResponse, error) {
 	if c.token == "" {
 		say("Unauthenticated user")
+		return nil, ErrUserUnauthenticated
 	}
 	say("Input ID")
 	s.Scan()
@@ -100,7 +111,24 @@ func (c *Client) GetData(ctx context.Context, s *bufio.Scanner) (*pb.GetResponse
 func (c *Client) SaveData(ctx context.Context, s *bufio.Scanner) error {
 	if c.token == "" {
 		say("Unauthenticated user")
+		return ErrUserUnauthenticated
 	}
+	in := buildInput(s)
+
+	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("token", c.token))
+	resp, err := c.grpcClient.Save(ctx, in)
+	if err != nil {
+		return err
+	}
+
+	if resp != nil {
+		sayf("Saved ID: %s\n", resp.GetID())
+	}
+
+	return nil
+}
+
+func buildInput(s *bufio.Scanner) *pb.SaveRequest {
 	say(ChooseKind)
 	s.Scan()
 	input := s.Text()
@@ -161,15 +189,25 @@ func (c *Client) SaveData(ctx context.Context, s *bufio.Scanner) error {
 	s.Scan()
 	in.Meta = s.Text()
 
+	return in
+}
+
+// SyncData method gets all user's data from server and saves it into local cache.
+func (c *Client) SyncData(ctx context.Context) error {
 	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("token", c.token))
-	resp, err := c.grpcClient.Save(ctx, in)
+
+	data, err := c.grpcClient.GetMany(ctx, &pb.GetManyRequest{})
 	if err != nil {
 		return err
 	}
 
-	if resp != nil {
-		sayf("Saved ID: %s\n", resp.GetID())
+	cnt := 0
+	for _, d := range data.UserData {
+		c.localCache.Store(d.ID, d)
+		cnt += 1
 	}
+
+	sayf("\nCurrent user: %d record(s) found\n", cnt)
 
 	return nil
 }
@@ -185,18 +223,48 @@ func (c *Client) ListenAction(ctx context.Context) {
 			if _, err := c.Register(ctx, scanner); err != nil {
 				sayf("failed to register user: %v\n", err)
 			}
+
 		case "2":
 			if _, err := c.LogIn(ctx, scanner); err != nil {
+				if IsServerError(err) {
+					say(ErrServerUnavailable.Error())
+					continue
+				}
 				sayf("failed to log in user: %v\n", err)
 			}
+
+			if err := c.SyncData(ctx); err != nil {
+				if IsServerError(err) {
+					say(ErrServerUnavailable.Error())
+					continue
+				}
+				sayf("Failed to sync data with server, err=%+v", err.Error())
+			} else {
+				say("Remote data successfully synchronized..")
+			}
+
 		case "3":
 			got, err := c.GetData(ctx, scanner)
 			if err != nil {
-				sayf("failed to get data: %v\n", err)
+				if IsServerError(err) {
+					say(ErrServerUnavailable.Error())
+					// если серверная ошибка, идем рыться в локальную мапу
+					//c.localCache.Range(func(key, value interface{}) bool {
+					//	fmt.Printf("Key: %s, Value: %s\n", key.(string), value)
+					//	return true
+					//})
+					continue
+				}
+				sayf("\nfailed to get data: %v\n", err)
+				continue
 			}
 			say(got)
 		case "4":
 			if err := c.SaveData(ctx, scanner); err != nil {
+				if IsServerError(err) {
+					say(ErrServerUnavailable.Error())
+					continue
+				}
 				sayf("failed to save data: %v\n", err)
 			}
 		case "0":
@@ -207,3 +275,19 @@ func (c *Client) ListenAction(ctx context.Context) {
 		}
 	}
 }
+
+// IsServerError checks for server unavailability and returns bool.
+func IsServerError(err error) bool {
+	serverErrors := []codes.Code{codes.Unavailable}
+	if e, ok := status.FromError(err); ok {
+		if !slices.Contains(serverErrors, e.Code()) {
+			return false
+		}
+	}
+	return true
+}
+
+var (
+	ErrUserUnauthenticated = errors.New("unauthenticated user")
+	ErrServerUnavailable   = errors.New("server unavailable")
+)

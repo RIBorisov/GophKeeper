@@ -12,11 +12,14 @@ type AppConfig struct {
 }
 
 type ServiceConfig struct {
-	SecretKey string `env:"SECRET_KEY" envDefault:""`
+	SecretKey string `env:"SECRET_KEY" envDefault:"1Kg7nVcKla09d2Hf"`
 }
 
 type S3Config struct {
-	BucketName string `env:"BUCKET_NAME" envDefault:"bucket"`
+	BucketName      string `env:"S3_BUCKET_NAME" envDefault:"bucket"`
+	Endpoint        string `env:"S3_ENDPOINT" envDefault:"localhost:9000"`
+	AccessKeyID     string `env:"S3_AK_ID" envDefault:"admin"`
+	SecretAccessKey string `env:"S3_SECRET_AK" envDefault:"password"`
 }
 
 type Config struct {

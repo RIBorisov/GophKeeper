@@ -22,11 +22,12 @@ type Store interface {
 	GetUser(ctx context.Context, login string) (*storage.UserEntity, error)
 	Save(ctx context.Context, data model.Save) (string, error)
 	Get(ctx context.Context, id string) (*storage.MetadataEntity, error)
+	GetMany(ctx context.Context) ([]*storage.MetadataEntity, error)
 }
 
 type Service struct {
 	Storage  Store
-	S3Client *s3.Client
+	S3Client *s3.S3Client
 	Cfg      *config.Config
 }
 
@@ -90,8 +91,13 @@ func (s *Service) SaveData(ctx context.Context, in *pb.SaveRequest) (string, err
 
 	case *pb.SaveRequest_Credentials:
 		log.Debug("going to save credentials..")
-		text := in.GetCredentials().GetLogin() + " " + in.GetCredentials().GetPassword()
-		if err := s.saveText(ctx, fileName, text); err != nil {
+
+		creds := pb.Credentials{Login: in.GetCredentials().Login, Password: in.GetCredentials().Password}
+		b, err := proto.Marshal(&creds)
+		if err != nil {
+			return "", fmt.Errorf("failed to marshal text into pb: %w", err)
+		}
+		if err = s.saveBytes(ctx, fileName, b); err != nil {
 			return "", fmt.Errorf("failed to save credentials")
 		}
 
@@ -125,6 +131,12 @@ func (s *Service) GetData(ctx context.Context, id string) (*pb.GetResponse, erro
 		return nil, fmt.Errorf("failed to get object from S3: %w", err)
 	}
 
+	// decrypts object data
+	decrypted, err := Decrypt(s.Cfg.Service.SecretKey, obj)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decrypt object: %w", err)
+	}
+
 	res := &pb.GetResponse{
 		ID:   id,
 		Kind: raw.Kind.ToPB(),
@@ -132,7 +144,7 @@ func (s *Service) GetData(ctx context.Context, id string) (*pb.GetResponse, erro
 
 	switch raw.Kind {
 	case model.CardCredentials:
-		parts := strings.Split(string(obj), " ")
+		parts := strings.Split(string(decrypted), " ")
 		if len(parts) < 3 {
 			return nil, fmt.Errorf("invalid data format: %w", err)
 		}
@@ -144,23 +156,46 @@ func (s *Service) GetData(ctx context.Context, id string) (*pb.GetResponse, erro
 		}}
 
 	case model.Text:
-		res.Data = &pb.GetResponse_Text{Text: string(obj)}
+		res.Data = &pb.GetResponse_Text{Text: string(decrypted)}
 
 	case model.Credentials:
 		var credentials pb.Credentials
-		if err = proto.Unmarshal(obj, &credentials); err != nil {
+		if err = proto.Unmarshal(decrypted, &credentials); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal credentials: %w", err)
 		}
 		res.Data = &pb.GetResponse_Credentials{Credentials: &credentials}
 
 	case model.Binary:
-		res.Data = &pb.GetResponse_Binary{Binary: obj}
+		res.Data = &pb.GetResponse_Binary{Binary: decrypted}
 
 	default:
 		return nil, fmt.Errorf("unsupported kind: %v", raw.Kind)
 	}
 
 	return res, nil
+}
+
+// GetUserData retrieves all user data. The method could be used for synchronize purposes.
+func (s *Service) GetUserData(ctx context.Context) (*pb.GetManyResponse, error) {
+	raw, err := s.Storage.GetMany(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get data from storage: %w", err)
+	}
+
+	var userData []*pb.GetResponse
+	for _, r := range raw {
+		data, err := s.GetData(ctx, r.ID)
+		if err != nil {
+			return nil, err
+		}
+		userData = append(userData, &pb.GetResponse{
+			ID:   data.GetID(),
+			Kind: data.GetKind(),
+			Data: data.GetData(),
+		})
+	}
+
+	return &pb.GetManyResponse{UserData: userData}, nil
 }
 
 var (

@@ -32,6 +32,25 @@ migration: #  example: make migration name=add-smth
         -seq -digits 3 \
         $(name)
 
+DSN="postgresql://admin:password@localhost:5432/gophkeeper?sslmode=disable"
+.PHONY: migrate-up
+migrate-up:
+	docker run --rm \
+    -v $(realpath ./internal/storage/migrations):/migrations \
+    migrate/migrate:v4.16.2 \
+        -path=/migrations \
+        -database $(DSN) \
+        up
+
+.PHONY: migrate-down
+migrate-down:
+	docker run --rm \
+    -v $(realpath ./internal/storage/migrations):/migrations \
+    migrate/migrate:v4.16.2 \
+        -path=/migrations \
+        -database $(DSN) \
+        down 1
+
 CLIENT_DIR := cmd/client
 SERVER_DIR := cmd/server
 APP_NAME := gophkeeper
