@@ -92,11 +92,6 @@ func (g *GRPCServer) Save(ctx context.Context, in *pb.SaveRequest) (*pb.SaveResp
 		return nil, status.Error(codes.Internal, "")
 	}
 
-	// нужно сохранять разные типы данных
-	// через свитч получаем тип данных и формируем модель,
-	// с моделью идем в сервис, в конкретный отдельный метод и сохраняем в базе и с3
-	// TODO: потом навесить шифрование
-
 	return &pb.SaveResponse{ID: id}, nil
 }
 
@@ -104,7 +99,7 @@ func (g *GRPCServer) Save(ctx context.Context, in *pb.SaveRequest) (*pb.SaveResp
 func (g *GRPCServer) Get(ctx context.Context, in *pb.GetRequest) (*pb.GetResponse, error) {
 	data, err := g.svc.GetData(ctx, in.GetID())
 	if err != nil {
-		log.Error("failed to get data", "metadata id", in.GetID(), "err", err)
+		log.Error("failed to get data", "id", in.GetID(), "err", err)
 		if errors.Is(err, storage.ErrMetadataNotFound) {
 			return nil, status.Error(codes.NotFound, "Not found")
 		}

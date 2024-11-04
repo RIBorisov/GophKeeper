@@ -13,11 +13,10 @@ var (
 )
 
 func main() {
-	ctx := context.Background()
-	c, err := client.NewClient(ctx)
+	c, err := client.NewClient()
 	if err != nil {
 		log.Fatal("failed to start client", "err", err)
 	}
 
-	c.ListenAction(ctx, buildDate, buildVersion)
+	c.ListenAction(context.Background(), buildDate, buildVersion)
 }

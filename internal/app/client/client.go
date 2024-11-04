@@ -34,8 +34,8 @@ type Client struct {
 	token      string
 }
 
-func NewClient(ctx context.Context) (*Client, error) {
-	conn, err := grpc.DialContext(ctx, "localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+func NewClient() (*Client, error) {
+	conn, err := grpc.NewClient("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create new client: %w", err)
 	}
