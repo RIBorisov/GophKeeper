@@ -90,21 +90,31 @@ func (c *Client) GetData(ctx context.Context, s *bufio.Scanner) (*pb.GetResponse
 	}
 	say("Input ID")
 	s.Scan()
-	input := s.Text()
+	input := strings.TrimSpace(s.Text())
 
 	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("token", c.token))
 	resp, err := c.grpcClient.Get(ctx, &pb.GetRequest{ID: input})
 	if err != nil {
+		if IsServerError(err) {
+			say(ErrServerUnavailable.Error())
+			say("going to get data from local storage..")
+			v, ok := c.localCache.Load(input)
+			if !ok {
+				return nil, err
+			}
+			local := v.(*pb.GetResponse)
+
+			return local, nil
+		}
+
 		return nil, err
 	}
 
-	if resp != nil {
-		return resp, nil
+	if resp == nil {
+		return nil, ErrDataNotFound
 	}
 
-	sayf("Data ID: %s\n", resp.GetID())
-
-	return nil, nil
+	return resp, nil
 
 }
 
@@ -212,19 +222,19 @@ func (c *Client) SyncData(ctx context.Context) error {
 	return nil
 }
 
-func (c *Client) ListenAction(ctx context.Context) {
+func (c *Client) ListenAction(ctx context.Context, bDate, bVersion string) {
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
 		say(InputAction)
 		scanner.Scan()
 		input := scanner.Text()
 		switch strings.TrimSpace(input) {
-		case "1":
+		case Register.String():
 			if _, err := c.Register(ctx, scanner); err != nil {
 				sayf("failed to register user: %v\n", err)
 			}
 
-		case "2":
+		case LogIn.String():
 			if _, err := c.LogIn(ctx, scanner); err != nil {
 				if IsServerError(err) {
 					say(ErrServerUnavailable.Error())
@@ -243,23 +253,14 @@ func (c *Client) ListenAction(ctx context.Context) {
 				say("Remote data successfully synchronized..")
 			}
 
-		case "3":
+		case GetData.String():
 			got, err := c.GetData(ctx, scanner)
 			if err != nil {
-				if IsServerError(err) {
-					say(ErrServerUnavailable.Error())
-					// если серверная ошибка, идем рыться в локальную мапу
-					//c.localCache.Range(func(key, value interface{}) bool {
-					//	fmt.Printf("Key: %s, Value: %s\n", key.(string), value)
-					//	return true
-					//})
-					continue
-				}
 				sayf("\nfailed to get data: %v\n", err)
 				continue
 			}
-			say(got)
-		case "4":
+			say("Result: " + got.String())
+		case SaveData.String():
 			if err := c.SaveData(ctx, scanner); err != nil {
 				if IsServerError(err) {
 					say(ErrServerUnavailable.Error())
@@ -267,9 +268,13 @@ func (c *Client) ListenAction(ctx context.Context) {
 				}
 				sayf("failed to save data: %v\n", err)
 			}
-		case "0":
+		case Return.String():
 			say("Exiting the application..")
 			os.Exit(1)
+		case BuildInfo.String():
+			sayf("Build date: %s\n", bDate)
+			sayf("Build version: %s\n", bVersion)
+
 		default:
 			say("Unknown value")
 		}
@@ -290,4 +295,5 @@ func IsServerError(err error) bool {
 var (
 	ErrUserUnauthenticated = errors.New("unauthenticated user")
 	ErrServerUnavailable   = errors.New("server unavailable")
+	ErrDataNotFound        = errors.New("not found data")
 )

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"os"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -26,7 +27,7 @@ type GRPCServer struct {
 }
 
 // GRPCServe runs the gRPC server.
-func GRPCServe(svc *service.Service) error {
+func GRPCServe(svc *service.Service, stopCh chan os.Signal) error {
 	listen, err := net.Listen("tcp", svc.Cfg.App.Addr)
 	if err != nil {
 		return fmt.Errorf("failed to listen a port: %w", err)
@@ -41,6 +42,13 @@ func GRPCServe(svc *service.Service) error {
 	pb.RegisterGophKeeperServiceServer(s, &GRPCServer{svc: svc})
 	reflection.Register(s)
 	log.Info("Starting gRPC server...", "Addr", svc.Cfg.App.Addr)
+
+	go func() {
+		<-stopCh
+		log.Info("got signal to stop server..")
+		s.GracefulStop()
+		log.Info("server gracefully stopped..")
+	}()
 
 	return s.Serve(listen)
 }

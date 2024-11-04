@@ -51,26 +51,11 @@ migrate-down:
         -database $(DSN) \
         down 1
 
-CLIENT_DIR := cmd/client
-SERVER_DIR := cmd/server
+CLIENT_DIR := ./cmd/client
+SERVER_DIR := ./cmd/server
 APP_NAME := gophkeeper
-COMMIT_HASH := $(shell git rev-parse --short=8 HEAD)
 DATE := $(shell date +%Y-%m-%d)
-
-.PHONY: server
-server:
-	echo "I AM SERVER ECHO"
-
-.PHONY: client
-client:
-	echo "I AM CLIENT ECHO"
-
-.PHONY: build
-build: client server
-	echo "I AM BUILD ECHO AFTER CLIENT && SERVER"
-#	cd $(DIR) && \
-#	go build -ldflags "-X main.buildVersion=$(version) -X main.buildDate=$(DATE) -X main.buildCommit=$(COMMIT_HASH)" -o $(APP_NAME)
-#	cd $(DIR) && ./$(APP_NAME)
+VERSION := 0.0.1
 
 .PHONY: pb
 pb:
@@ -80,3 +65,17 @@ pb:
 		--go-grpc_out=pkg/server \
 		--go-grpc_opt=paths=source_relative \
 		./proto/*.proto
+
+
+.PHONY: build
+build:
+	go build -ldflags '-X main.buildVersion=$(VERSION) -X main.buildDate=$(DATE)' -o $(CLIENT_DIR)/client $(CLIENT_DIR) && \
+ 	go build -o $(SERVER_DIR)/server $(SERVER_DIR)
+
+.PHONY: run-server
+run-server:
+	$(SERVER_DIR)/server
+
+.PHONY: run-client
+run-client:
+	$(CLIENT_DIR)/client
