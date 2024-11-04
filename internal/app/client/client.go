@@ -47,13 +47,18 @@ func NewClient(ctx context.Context) (*Client, error) {
 	}, nil
 }
 
-func (c *Client) Register(ctx context.Context, s *bufio.Scanner) (*pb.RegisterResponse, error) {
+func scanCredentials(s *bufio.Scanner) (string, string) {
 	say("Enter login")
 	s.Scan()
 	login := s.Text()
 	say("Enter password")
 	s.Scan()
 	password := s.Text()
+	return login, password
+}
+
+func (c *Client) Register(ctx context.Context, s *bufio.Scanner) (*pb.RegisterResponse, error) {
+	login, password := scanCredentials(s)
 	in := &pb.RegisterRequest{Login: login, Password: password}
 	resp, err := c.grpcClient.Register(ctx, in)
 	if err != nil {
@@ -66,12 +71,7 @@ func (c *Client) Register(ctx context.Context, s *bufio.Scanner) (*pb.RegisterRe
 }
 
 func (c *Client) LogIn(ctx context.Context, s *bufio.Scanner) (*pb.AuthResponse, error) {
-	say("Enter login")
-	s.Scan()
-	login := s.Text()
-	say("Enter password")
-	s.Scan()
-	password := s.Text()
+	login, password := scanCredentials(s)
 	in := &pb.AuthRequest{Login: login, Password: password}
 	resp, err := c.grpcClient.Auth(ctx, in)
 	if err != nil {
@@ -102,7 +102,11 @@ func (c *Client) GetData(ctx context.Context, s *bufio.Scanner) (*pb.GetResponse
 			if !ok {
 				return nil, err
 			}
-			local := v.(*pb.GetResponse)
+			local, ok := v.(*pb.GetResponse)
+			if !ok {
+				say("found but can't recognize value, possible corrupted data")
+				return nil, errors.New("can't recognize data")
+			}
 
 			return local, nil
 		}
@@ -115,7 +119,6 @@ func (c *Client) GetData(ctx context.Context, s *bufio.Scanner) (*pb.GetResponse
 	}
 
 	return resp, nil
-
 }
 
 func (c *Client) SaveData(ctx context.Context, s *bufio.Scanner) error {
@@ -155,18 +158,15 @@ func buildInput(s *bufio.Scanner) *pb.SaveRequest {
 		s.Scan()
 		cvc := s.Text()
 
-		in = &pb.SaveRequest{
-			Kind: pb.Kind_CARD,
-			Data: &pb.SaveRequest_Card{Card: &pb.Card{Number: number, MmYy: mmYY, Cvc: cvc}},
-		}
+		in.Kind = pb.Kind_CARD
+		in.Data = &pb.SaveRequest_Card{Card: &pb.Card{Number: number, MmYy: mmYY, Cvc: cvc}}
 	case "2":
 		say("Enter text")
 		s.Scan()
 		text := s.Text()
-		in = &pb.SaveRequest{
-			Kind: pb.Kind_TEXT,
-			Data: &pb.SaveRequest_Text{Text: text},
-		}
+
+		in.Kind = pb.Kind_TEXT
+		in.Data = &pb.SaveRequest_Text{Text: text}
 	case "3":
 		say("Enter login")
 		s.Scan()
@@ -174,18 +174,16 @@ func buildInput(s *bufio.Scanner) *pb.SaveRequest {
 		say("Enter password")
 		s.Scan()
 		password := s.Text()
-		in = &pb.SaveRequest{
-			Kind: pb.Kind_CREDENTIALS,
-			Data: &pb.SaveRequest_Credentials{Credentials: &pb.Credentials{Login: login, Password: password}},
-		}
+
+		in.Kind = pb.Kind_CREDENTIALS
+		in.Data = &pb.SaveRequest_Credentials{Credentials: &pb.Credentials{Login: login, Password: password}}
 	case "4":
 		say("Enter binary")
 		s.Scan()
 		b := s.Bytes()
-		in = &pb.SaveRequest{
-			Kind: pb.Kind_BINARY,
-			Data: &pb.SaveRequest_Binary{Binary: b},
-		}
+
+		in.Kind = pb.Kind_BINARY
+		in.Data = &pb.SaveRequest_Binary{Binary: b}
 	case "0":
 		say("Returning to previous menu..")
 		time.Sleep(500 * time.Millisecond)
@@ -212,9 +210,9 @@ func (c *Client) SyncData(ctx context.Context) error {
 	}
 
 	cnt := 0
-	for _, d := range data.UserData {
-		c.localCache.Store(d.ID, d)
-		cnt += 1
+	for _, d := range data.GetUserData() {
+		c.localCache.Store(d.GetID(), d)
+		cnt++
 	}
 
 	sayf("\nCurrent user: %d record(s) found\n", cnt)

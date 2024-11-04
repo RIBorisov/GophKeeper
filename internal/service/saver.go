@@ -15,7 +15,11 @@ func (s *Service) saveText(ctx context.Context, fileName, text string) error {
 	if err != nil {
 		return fmt.Errorf("failed to save file: %w", err)
 	}
-	defer file.Close()
+	defer func() {
+		if err = file.Close(); err != nil {
+			log.Error("failed to close file", "fileName", fileName)
+		}
+	}()
 
 	fileInfo, err := file.Stat()
 	if err != nil {
@@ -35,7 +39,11 @@ func (s *Service) saveBytes(ctx context.Context, fileName string, text []byte) e
 	if err != nil {
 		return fmt.Errorf("failed to save file: %w", err)
 	}
-	defer file.Close()
+	defer func() {
+		if err = file.Close(); err != nil {
+			log.Error("failed to close file", "fileName", fileName)
+		}
+	}()
 
 	fileInfo, err := file.Stat()
 	if err != nil {
@@ -58,7 +66,11 @@ func (s *Service) saveCard(ctx context.Context, fileName string, in *pb.Card) er
 	if err != nil {
 		return fmt.Errorf("failed to save file: %w", err)
 	}
-	defer file.Close()
+	defer func() {
+		if err = file.Close(); err != nil {
+			log.Error("failed to close file", "fileName", fileName)
+		}
+	}()
 
 	fileInfo, err := file.Stat()
 	if err != nil {
@@ -93,7 +105,7 @@ func saveFile(fname, secret string, data []byte) (*os.File, error) {
 		return nil, fmt.Errorf("failed to encrypt: %w", err)
 	}
 
-	if err := os.WriteFile("tmp/"+fname, encrypted, 0666); err != nil {
+	if err := os.WriteFile("tmp/"+fname, encrypted, 0600); err != nil {
 		return nil, fmt.Errorf("failed to create file: %w", err)
 	}
 

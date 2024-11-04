@@ -34,6 +34,9 @@ type Service struct {
 // RegisterUser encrypts password, saves user login and password into database.
 func (s *Service) RegisterUser(ctx context.Context, in model.UserCredentials) (string, error) {
 	encrypted, err := hashPassword(s.Cfg.Service.SecretKey, in.Password)
+	if err != nil {
+		return "", fmt.Errorf("failed to hash user password: %w", err)
+	}
 	in.Password = encrypted
 
 	userID, err := s.Storage.Register(ctx, in)
@@ -92,13 +95,13 @@ func (s *Service) SaveData(ctx context.Context, in *pb.SaveRequest) (string, err
 	case *pb.SaveRequest_Credentials:
 		log.Debug("going to save credentials..")
 
-		creds := pb.Credentials{Login: in.GetCredentials().Login, Password: in.GetCredentials().Password}
+		creds := pb.Credentials{Login: in.GetCredentials().GetLogin(), Password: in.GetCredentials().GetPassword()}
 		b, err := proto.Marshal(&creds)
 		if err != nil {
 			return "", fmt.Errorf("failed to marshal text into pb: %w", err)
 		}
 		if err = s.saveBytes(ctx, fileName, b); err != nil {
-			return "", fmt.Errorf("failed to save credentials")
+			return "", fmt.Errorf("failed to save credentials: %w", err)
 		}
 
 	default:
@@ -182,20 +185,20 @@ func (s *Service) GetUserData(ctx context.Context) (*pb.GetManyResponse, error) 
 		return nil, fmt.Errorf("failed to get data from storage: %w", err)
 	}
 
-	var userData []*pb.GetResponse
+	res := &pb.GetManyResponse{}
 	for _, r := range raw {
 		data, err := s.GetData(ctx, r.ID)
 		if err != nil {
 			return nil, err
 		}
-		userData = append(userData, &pb.GetResponse{
+		res.UserData = append(res.UserData, &pb.GetResponse{
 			ID:   data.GetID(),
 			Kind: data.GetKind(),
 			Data: data.GetData(),
 		})
 	}
 
-	return &pb.GetManyResponse{UserData: userData}, nil
+	return res, nil
 }
 
 var (

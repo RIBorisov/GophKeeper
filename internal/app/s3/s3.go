@@ -57,7 +57,11 @@ func (s *S3Client) GetObject(ctx context.Context, name string) ([]byte, error) {
 		return nil, fmt.Errorf("failed to get object: %w", err)
 	}
 
-	defer obj.Close()
+	defer func() {
+		if err = obj.Close(); err != nil {
+			log.Error("failed to close object", "objectName", name)
+		}
+	}()
 
 	buf := new(bytes.Buffer)
 	if _, err = buf.ReadFrom(obj); err != nil {

@@ -9,7 +9,6 @@ import (
 var globalLogger zerolog.Logger
 
 func InitLogger(l zerolog.Level) {
-	tmpLog := zerolog.Nop()
 	zerolog.SetGlobalLevel(l)
 
 	out := zerolog.NewConsoleWriter(
@@ -19,9 +18,7 @@ func InitLogger(l zerolog.Level) {
 		},
 	)
 
-	tmpLog = zerolog.New(out).With().Timestamp().Logger()
-
-	globalLogger = tmpLog
+	globalLogger = zerolog.New(out).With().Timestamp().Logger()
 }
 
 func Debug(msg string, kv ...any) {
