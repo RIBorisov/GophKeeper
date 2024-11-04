@@ -51,12 +51,6 @@ migrate-down:
         -database $(DSN) \
         down 1
 
-CLIENT_DIR := ./cmd/client
-SERVER_DIR := ./cmd/server
-APP_NAME := gophkeeper
-DATE := $(shell date +%Y-%m-%d)
-VERSION := 0.0.1
-
 .PHONY: pb
 pb:
 	protoc -I=./proto \
@@ -66,6 +60,10 @@ pb:
 		--go-grpc_opt=paths=source_relative \
 		./proto/*.proto
 
+CLIENT_DIR := ./cmd/client
+SERVER_DIR := ./cmd/server
+DATE := $(shell date +%Y-%m-%d)
+OUTPUT_DIR := bin
 
 .PHONY: build
 build:
@@ -79,3 +77,18 @@ run-server:
 .PHONY: run-client
 run-client:
 	$(CLIENT_DIR)/client
+
+PLATFORMS = linux_amd64 windows_amd64 darwin_amd64 darwin_arm64
+BIN_DIR = bin
+
+.PHONY: build-all
+build-all:
+	@for platform in $(PLATFORMS); do \
+		OSARCH=$$platform; \
+		GOOS=$$(echo "$$OSARCH" | cut -d_ -f1); \
+		GOARCH=$$(echo "$$OSARCH" | cut -d_ -f2); \
+		echo "Building for $$GOOS/$$GOARCH..."; \
+		go build -ldflags '-X main.buildVersion=$(version) -X main.buildDate=$(DATE)' -o $(BIN_DIR)/client_$$OSARCH $(CLIENT_DIR); \
+	done && \
+	echo "Building server..."; \
+	go build -o $(BIN_DIR)/gophkeeper_server $(SERVER_DIR)

@@ -28,3 +28,9 @@ go.work.sum
 localClient
 golangci-lint/
 .golangci.yml
+
+gophkeeper_server
+client_windows_amd64
+client_linux_amd64
+client_darwin_arm64
+client_darwin_amd64
