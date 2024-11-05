@@ -9,9 +9,11 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 
+	"github.com/RIBorisov/GophKeeper/internal/app/cert"
 	"github.com/RIBorisov/GophKeeper/internal/interceptor"
 	"github.com/RIBorisov/GophKeeper/internal/log"
 	"github.com/RIBorisov/GophKeeper/internal/model"
@@ -37,11 +39,19 @@ func GRPCServe(svc *service.Service, stopCh chan os.Signal) error {
 		"/GophKeeperService/Register",
 		"/GophKeeperService/Auth",
 	}
-	_ = exclude
-	s := grpc.NewServer(grpc.UnaryInterceptor(interceptor.UserIDUnaryInterceptor(svc, exclude)))
+
+	if err = cert.PrepareTLS(svc.Cfg.App.CertPath, svc.Cfg.App.CertKeyPath); err != nil {
+		return fmt.Errorf("failed to prepare TLS: %w", err)
+	}
+
+	creds, err := credentials.NewServerTLSFromFile(svc.Cfg.App.CertPath, svc.Cfg.App.CertKeyPath)
+	if err != nil {
+		return fmt.Errorf("failed to construct TLS credentials: %w", err)
+	}
+	s := grpc.NewServer(grpc.Creds(creds), grpc.UnaryInterceptor(interceptor.UserIDUnaryInterceptor(svc, exclude)))
 	pb.RegisterGophKeeperServiceServer(s, &GRPCServer{svc: svc})
 	reflection.Register(s)
-	log.Info("Starting gRPC server...", "Addr", svc.Cfg.App.Addr)
+	log.Info("Starting gRPC server..", "Addr", svc.Cfg.App.Addr)
 
 	go func() {
 		<-stopCh

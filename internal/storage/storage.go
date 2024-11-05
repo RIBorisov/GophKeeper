@@ -22,7 +22,7 @@ type DB struct {
 
 // Load method initializes database pool.
 func Load(ctx context.Context, cfg *config.Config) (*DB, error) {
-	pool, err := NewPool(ctx, cfg.App.PgDSN)
+	pool, err := NewPool(ctx, cfg.App.PgDSN+"?sslmode=disable")
 	if err != nil {
 		return nil, fmt.Errorf("failed to obtain pool: %w", err)
 	}

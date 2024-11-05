@@ -13,7 +13,6 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
@@ -35,7 +34,12 @@ type Client struct {
 }
 
 func NewClient() (*Client, error) {
-	conn, err := grpc.NewClient("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	creds, err := applyTLS()
+	if err != nil {
+		return nil, fmt.Errorf("failed to apply tls: %w", err)
+	}
+
+	conn, err := grpc.NewClient("localhost:50051", grpc.WithTransportCredentials(creds))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create new client: %w", err)
 	}
@@ -254,7 +258,7 @@ func (c *Client) ListenAction(ctx context.Context, bDate, bVersion string) {
 		case GetData.String():
 			got, err := c.GetData(ctx, scanner)
 			if err != nil {
-				sayf("\nfailed to get data: %v\n", err)
+				sayf("failed to get data: %v\n", err)
 				continue
 			}
 			say("Result: " + got.String())
