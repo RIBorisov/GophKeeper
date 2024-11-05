@@ -10,6 +10,7 @@ require (
 	github.com/jackc/pgx/v5 v5.7.1
 	github.com/minio/minio-go/v7 v7.0.78
 	github.com/rs/zerolog v1.33.0
+	go.uber.org/mock v0.5.0
 	golang.org/x/crypto v0.28.0
 	golang.org/x/sync v0.8.0
 	google.golang.org/grpc v1.67.1

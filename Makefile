@@ -65,6 +65,10 @@ SERVER_DIR := ./cmd/server
 DATE := $(shell date +%Y-%m-%d)
 OUTPUT_DIR := bin
 
+.PHONY: gen-mocks
+gen-mocks:
+	mockgen -source=internal/service/service.go -destination=internal/service/mocks/service_mock.gen.go -package=mocks
+
 .PHONY: build
 build:
 	go build -ldflags '-X main.buildVersion=$(VERSION) -X main.buildDate=$(DATE)' -o $(CLIENT_DIR)/client $(CLIENT_DIR) && \
