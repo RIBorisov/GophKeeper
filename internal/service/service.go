@@ -17,7 +17,7 @@ import (
 	pb "github.com/RIBorisov/GophKeeper/pkg/server"
 )
 
-type Store interface {
+type StoreI interface {
 	Register(ctx context.Context, in model.UserCredentials) (model.UserID, error)
 	GetUser(ctx context.Context, login string) (*storage.UserEntity, error)
 	Save(ctx context.Context, data model.Save) (string, error)
@@ -26,7 +26,7 @@ type Store interface {
 }
 
 type Service struct {
-	Storage  Store
+	Storage  StoreI
 	S3Client s3.S3ClientI
 	Cfg      *config.Config
 }

@@ -18,31 +18,31 @@ import (
 	gomock "go.uber.org/mock/gomock"
 )
 
-// MockStore is a mock of Store interface.
-type MockStore struct {
+// MockStoreI is a mock of StoreI interface.
+type MockStoreI struct {
 	ctrl     *gomock.Controller
-	recorder *MockStoreMockRecorder
+	recorder *MockStoreIMockRecorder
 }
 
-// MockStoreMockRecorder is the mock recorder for MockStore.
-type MockStoreMockRecorder struct {
-	mock *MockStore
+// MockStoreIMockRecorder is the mock recorder for MockStoreI.
+type MockStoreIMockRecorder struct {
+	mock *MockStoreI
 }
 
-// NewMockStore creates a new mock instance.
-func NewMockStore(ctrl *gomock.Controller) *MockStore {
-	mock := &MockStore{ctrl: ctrl}
-	mock.recorder = &MockStoreMockRecorder{mock}
+// NewMockStoreI creates a new mock instance.
+func NewMockStoreI(ctrl *gomock.Controller) *MockStoreI {
+	mock := &MockStoreI{ctrl: ctrl}
+	mock.recorder = &MockStoreIMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockStore) EXPECT() *MockStoreMockRecorder {
+func (m *MockStoreI) EXPECT() *MockStoreIMockRecorder {
 	return m.recorder
 }
 
 // Get mocks base method.
-func (m *MockStore) Get(ctx context.Context, id string) (*storage.MetadataEntity, error) {
+func (m *MockStoreI) Get(ctx context.Context, id string) (*storage.MetadataEntity, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", ctx, id)
 	ret0, _ := ret[0].(*storage.MetadataEntity)
@@ -51,13 +51,13 @@ func (m *MockStore) Get(ctx context.Context, id string) (*storage.MetadataEntity
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockStoreMockRecorder) Get(ctx, id any) *gomock.Call {
+func (mr *MockStoreIMockRecorder) Get(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockStore)(nil).Get), ctx, id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockStoreI)(nil).Get), ctx, id)
 }
 
 // GetMany mocks base method.
-func (m *MockStore) GetMany(ctx context.Context) ([]*storage.MetadataEntity, error) {
+func (m *MockStoreI) GetMany(ctx context.Context) ([]*storage.MetadataEntity, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetMany", ctx)
 	ret0, _ := ret[0].([]*storage.MetadataEntity)
@@ -66,13 +66,13 @@ func (m *MockStore) GetMany(ctx context.Context) ([]*storage.MetadataEntity, err
 }
 
 // GetMany indicates an expected call of GetMany.
-func (mr *MockStoreMockRecorder) GetMany(ctx any) *gomock.Call {
+func (mr *MockStoreIMockRecorder) GetMany(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMany", reflect.TypeOf((*MockStore)(nil).GetMany), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMany", reflect.TypeOf((*MockStoreI)(nil).GetMany), ctx)
 }
 
 // GetUser mocks base method.
-func (m *MockStore) GetUser(ctx context.Context, login string) (*storage.UserEntity, error) {
+func (m *MockStoreI) GetUser(ctx context.Context, login string) (*storage.UserEntity, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUser", ctx, login)
 	ret0, _ := ret[0].(*storage.UserEntity)
@@ -81,13 +81,13 @@ func (m *MockStore) GetUser(ctx context.Context, login string) (*storage.UserEnt
 }
 
 // GetUser indicates an expected call of GetUser.
-func (mr *MockStoreMockRecorder) GetUser(ctx, login any) *gomock.Call {
+func (mr *MockStoreIMockRecorder) GetUser(ctx, login any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUser", reflect.TypeOf((*MockStore)(nil).GetUser), ctx, login)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUser", reflect.TypeOf((*MockStoreI)(nil).GetUser), ctx, login)
 }
 
 // Register mocks base method.
-func (m *MockStore) Register(ctx context.Context, in model.UserCredentials) (model.UserID, error) {
+func (m *MockStoreI) Register(ctx context.Context, in model.UserCredentials) (model.UserID, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Register", ctx, in)
 	ret0, _ := ret[0].(model.UserID)
@@ -96,13 +96,13 @@ func (m *MockStore) Register(ctx context.Context, in model.UserCredentials) (mod
 }
 
 // Register indicates an expected call of Register.
-func (mr *MockStoreMockRecorder) Register(ctx, in any) *gomock.Call {
+func (mr *MockStoreIMockRecorder) Register(ctx, in any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockStore)(nil).Register), ctx, in)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockStoreI)(nil).Register), ctx, in)
 }
 
 // Save mocks base method.
-func (m *MockStore) Save(ctx context.Context, data model.Save) (string, error) {
+func (m *MockStoreI) Save(ctx context.Context, data model.Save) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Save", ctx, data)
 	ret0, _ := ret[0].(string)
@@ -111,7 +111,7 @@ func (m *MockStore) Save(ctx context.Context, data model.Save) (string, error) {
 }
 
 // Save indicates an expected call of Save.
-func (mr *MockStoreMockRecorder) Save(ctx, data any) *gomock.Call {
+func (mr *MockStoreIMockRecorder) Save(ctx, data any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Save", reflect.TypeOf((*MockStore)(nil).Save), ctx, data)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Save", reflect.TypeOf((*MockStoreI)(nil).Save), ctx, data)
 }
