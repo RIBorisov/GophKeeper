@@ -36,3 +36,5 @@ client_darwin_arm64
 client_darwin_amd64
 server.crt
 server.key
+coverage-index.html
+profile.cov

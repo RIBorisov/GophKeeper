@@ -21,6 +21,12 @@ func main() {
 	log.InitLogger(zerolog.Level(0))
 	log.Info("Logger has been initialized..")
 
+	if err := initApp(); err != nil {
+		log.Fatal("failed to initialize application", "err", err)
+	}
+}
+
+func initApp() error {
 	ctx := context.Background()
 
 	g, ctx := errgroup.WithContext(ctx)
@@ -48,4 +54,6 @@ func main() {
 	if err = g.Wait(); err != nil {
 		log.Fatal("unexpected error occurred", err)
 	}
+
+	return nil
 }

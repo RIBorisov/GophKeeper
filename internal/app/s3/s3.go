@@ -18,6 +18,11 @@ type S3Client struct {
 	bucketName string
 }
 
+type S3ClientI interface {
+	PutObject(ctx context.Context, name string, obj io.Reader, size int64) error
+	GetObject(ctx context.Context, name string) ([]byte, error)
+}
+
 func NewS3Client(ctx context.Context, cfg *config.Config) (*S3Client, error) {
 	client, err := minio.New(cfg.S3.Endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(cfg.S3.AccessKeyID, cfg.S3.SecretAccessKey, ""),

@@ -27,7 +27,7 @@ type Store interface {
 
 type Service struct {
 	Storage  Store
-	S3Client *s3.S3Client
+	S3Client s3.S3ClientI
 	Cfg      *config.Config
 }
 

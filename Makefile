@@ -67,7 +67,14 @@ OUTPUT_DIR := bin
 
 .PHONY: gen-mocks
 gen-mocks:
-	mockgen -source=internal/service/service.go -destination=internal/service/mocks/service_mock.gen.go -package=mocks
+	mockgen \
+		-source=internal/service/service.go \
+		-destination=internal/service/mocks/service_mock.gen.go \
+		-package=svcmock && \
+	mockgen \
+		-source=internal/app/s3/s3.go \
+		-destination=internal/app/s3/mocks/s3_mock.gen.go \
+		-package s3mock
 
 .PHONY: build
 build:
@@ -96,3 +103,14 @@ build-all:
 	done && \
 	echo "Building server..."; \
 	go build -o $(BIN_DIR)/gophkeeper_server $(SERVER_DIR)
+
+.PHONY: tests
+t:
+	go list ./... | grep -vE "mocks|proto|pkg/server"|xargs go test -v -coverpkg=$1 -coverprofile=profile.cov $1
+	go tool cover -func profile.cov
+	go tool cover -html profile.cov -o coverage-index.html
+
+#.PHONY: tests
+#tests:
+#	go test -v -coverpkg=./... -coverprofile=profile.cov ./...
+#	go tool cover -func profile.cov
