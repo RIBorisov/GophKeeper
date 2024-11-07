@@ -6,7 +6,7 @@ import (
 	"github.com/rs/zerolog"
 )
 
-var globalLogger zerolog.Logger
+var gLogger zerolog.Logger
 
 func InitLogger(l zerolog.Level) {
 	zerolog.SetGlobalLevel(l)
@@ -18,25 +18,32 @@ func InitLogger(l zerolog.Level) {
 		},
 	)
 
-	globalLogger = zerolog.New(out).With().Timestamp().Logger()
+	gLogger = zerolog.New(out).With().Timestamp().Logger()
+}
+
+func GetLogger() *zerolog.Logger {
+	if &gLogger == nil {
+		InitLogger(zerolog.Level(0))
+	}
+	return &gLogger
 }
 
 func Debug(msg string, kv ...any) {
-	globalLogger.Debug().Fields(kv).Msg(msg)
+	gLogger.Debug().Fields(kv).Msg(msg)
 }
 
 func Info(msg string, kv ...any) {
-	globalLogger.Info().Fields(kv).Msg(msg)
+	gLogger.Info().Fields(kv).Msg(msg)
 }
 
 func Error(msg string, kv ...any) {
-	globalLogger.Error().Fields(kv).Msg(msg)
+	gLogger.Error().Fields(kv).Msg(msg)
 }
 
 func Warning(msg string, kv ...any) {
-	globalLogger.Warn().Fields(kv).Msg(msg)
+	gLogger.Warn().Fields(kv).Msg(msg)
 }
 
 func Fatal(msg string, kv ...any) {
-	globalLogger.Fatal().Fields(kv).Msg(msg)
+	gLogger.Fatal().Fields(kv).Msg(msg)
 }

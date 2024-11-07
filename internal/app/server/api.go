@@ -48,7 +48,13 @@ func GRPCServe(svc *service.Service, stopCh chan os.Signal) error {
 	if err != nil {
 		return fmt.Errorf("failed to construct TLS credentials: %w", err)
 	}
-	s := grpc.NewServer(grpc.Creds(creds), grpc.UnaryInterceptor(interceptor.UserIDUnaryInterceptor(svc, exclude)))
+	s := grpc.NewServer(
+		grpc.Creds(creds),
+		grpc.ChainUnaryInterceptor(
+			interceptor.UnaryServerInterceptor(),
+			interceptor.UserIDUnaryInterceptor(svc, exclude),
+		),
+	)
 	pb.RegisterGophKeeperServiceServer(s, &GRPCServer{svc: svc})
 	reflection.Register(s)
 	log.Info("Starting gRPC server..", "Addr", svc.Cfg.App.Addr)
