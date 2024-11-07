@@ -28,7 +28,7 @@ type S3Config struct {
 type Config struct {
 	App     AppConfig
 	Service ServiceConfig
-	S3      S3Config `envPrefix:"S3"`
+	S3      S3Config
 }
 
 func Load() *Config {
