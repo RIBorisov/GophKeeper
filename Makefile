@@ -104,7 +104,7 @@ build-all:
 	echo "Building server..."; \
 	go build -o $(BIN_DIR)/gophkeeper_server $(SERVER_DIR)
 
-.PHONY: tests
+.PHONY: t
 t:
 	go list ./... | grep -vE "mocks|proto|pkg/server"|xargs go test -v -coverpkg=$1 -coverprofile=profile.cov $1
 	go tool cover -func profile.cov

@@ -38,3 +38,4 @@ server.crt
 server.key
 coverage-index.html
 profile.cov
+runclient

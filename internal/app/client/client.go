@@ -13,6 +13,7 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
@@ -33,13 +34,19 @@ type Client struct {
 	token      string
 }
 
-func NewClient() (*Client, error) {
-	creds, err := applyTLS()
-	if err != nil {
-		return nil, fmt.Errorf("failed to apply tls: %w", err)
+func NewClient(tlsEnabled bool) (*Client, error) {
+	var opts []grpc.DialOption
+	if tlsEnabled {
+		creds, err := applyTLS()
+		if err != nil {
+			return nil, fmt.Errorf("failed to apply tls: %w", err)
+		}
+		opts = append(opts, grpc.WithTransportCredentials(creds))
+	} else {
+		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 
-	conn, err := grpc.NewClient("localhost:50051", grpc.WithTransportCredentials(creds))
+	conn, err := grpc.NewClient("localhost:50051", opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create new client: %w", err)
 	}
@@ -224,8 +231,9 @@ func (c *Client) SyncData(ctx context.Context) error {
 	return nil
 }
 
-func (c *Client) ListenAction(ctx context.Context, bDate, bVersion string) {
+func (c *Client) ListenAction(ctx context.Context, bDate, bVersion string) error {
 	scanner := bufio.NewScanner(os.Stdin)
+	cnt := 0
 	for {
 		say(InputAction)
 		scanner.Scan()
@@ -278,7 +286,12 @@ func (c *Client) ListenAction(ctx context.Context, bDate, bVersion string) {
 			sayf("Build version: %s\n", bVersion)
 
 		default:
-			say("Unknown value")
+			say("Incorrect value!")
+			cnt++
+		}
+
+		if cnt >= 3 {
+			return ErrToManyIncorrectValues
 		}
 	}
 }
@@ -295,7 +308,8 @@ func IsServerError(err error) bool {
 }
 
 var (
-	ErrUserUnauthenticated = errors.New("unauthenticated user")
-	ErrServerUnavailable   = errors.New("server unavailable")
-	ErrDataNotFound        = errors.New("not found data")
+	ErrUserUnauthenticated   = errors.New("unauthenticated user")
+	ErrServerUnavailable     = errors.New("server unavailable")
+	ErrDataNotFound          = errors.New("not found data")
+	ErrToManyIncorrectValues = errors.New("too many incorrect tries")
 )

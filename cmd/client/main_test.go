@@ -5,11 +5,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/RIBorisov/GophKeeper/internal/app/client"
 )
 
-func TestNewClient(t *testing.T) {
+func TestRunClient(t *testing.T) {
 	tests := []struct {
 		name    string
 		tls     bool
@@ -18,22 +19,25 @@ func TestNewClient(t *testing.T) {
 	}{
 		{
 			name:    "Positive #1",
+			tls:     false,
+			wantErr: true,
+			err:     client.ErrToManyIncorrectValues,
+		},
+		{
+			name:    "Positive #2",
 			tls:     true,
 			wantErr: true,
 			err:     fs.ErrNotExist,
 		},
-		{
-			name:    "Positive #2",
-			tls:     false,
-			wantErr: true,
-			err:     nil,
-		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := client.NewClient(tt.tls)
-			assert.ErrorIs(t, err, tt.err)
+			eg := &errgroup.Group{}
+			eg.Go(func() error {
+				return runClient(tt.tls)
+			})
+
+			assert.ErrorIs(t, eg.Wait(), tt.err)
 		})
 	}
 }
