@@ -26,9 +26,9 @@ type S3Config struct {
 }
 
 type Config struct {
-	App     AppConfig
 	Service ServiceConfig
 	S3      S3Config
+	App     AppConfig
 }
 
 func Load() *Config {

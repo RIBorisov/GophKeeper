@@ -106,11 +106,11 @@ build-all:
 
 .PHONY: t
 t:
-	go list ./... | grep -vE "mocks|proto|pkg/server"|xargs go test -v -coverpkg=$1 -coverprofile=profile.cov $1
+	go list ./... | grep -vE "mocks|proto|pkg"|xargs go test -v -coverpkg=$1 -coverprofile=profile.cov $1
 	go tool cover -func profile.cov
 	go tool cover -html profile.cov -o coverage-index.html
 
-#.PHONY: tests
-#tests:
-#	go test -v -coverpkg=./... -coverprofile=profile.cov ./...
-#	go tool cover -func profile.cov
+.PHONY: tests
+tests:
+	go test -v -coverpkg=./... -coverprofile=profile.cov ./...
+	go tool cover -func profile.cov

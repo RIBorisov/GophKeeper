@@ -6,7 +6,7 @@ import (
 	"github.com/rs/zerolog"
 )
 
-var gLogger zerolog.Logger
+var gLogger *zerolog.Logger
 
 func InitLogger(l zerolog.Level) {
 	zerolog.SetGlobalLevel(l)
@@ -18,14 +18,15 @@ func InitLogger(l zerolog.Level) {
 		},
 	)
 
-	gLogger = zerolog.New(out).With().Timestamp().Logger()
+	tmpLogger := zerolog.New(out).With().Timestamp().Logger()
+	gLogger = &tmpLogger
 }
 
 func GetLogger() *zerolog.Logger {
-	if &gLogger == nil {
+	if gLogger == nil {
 		InitLogger(zerolog.Level(0))
 	}
-	return &gLogger
+	return gLogger
 }
 
 func Debug(msg string, kv ...any) {

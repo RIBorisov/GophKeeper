@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -34,7 +35,7 @@ func initApp() error {
 
 	store, err := storage.Load(ctx, cfg)
 	if err != nil {
-		log.Fatal("failed to load storage", err)
+		return fmt.Errorf("failed to load storage: %w", err)
 	}
 	log.Info("Storage has been initialized..")
 
@@ -52,7 +53,7 @@ func initApp() error {
 	})
 
 	if err = g.Wait(); err != nil {
-		log.Fatal("unexpected error occurred", err)
+		return fmt.Errorf("unexpected error occurred: %w", err)
 	}
 
 	return nil
