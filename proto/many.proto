@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+option go_package = "gophkeeper/pkg/server";
+
+import "get.proto";
+
+message GetManyRequest {}
+
+message GetManyResponse {
+  repeated GetResponse UserData = 1;
+}

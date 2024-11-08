@@ -23,3 +23,19 @@ go.work.sum
 
 # env file
 .env
+.idea
+/tmp/*
+localClient
+golangci-lint/
+.golangci.yml
+
+gophkeeper_server
+client_windows_amd64
+client_linux_amd64
+client_darwin_arm64
+client_darwin_amd64
+server.crt
+server.key
+coverage-index.html
+profile.cov
+runclient
